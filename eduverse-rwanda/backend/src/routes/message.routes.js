@@ -5,6 +5,8 @@ const { asyncHandler } = require('../middleware/error.middleware');
 
 router.use(authenticate);
 router.get('/super-admin', asyncHandler(c.getSuperAdmin));
+router.get('/school-admin-contact', asyncHandler(c.getSchoolAdminContact));
+router.get('/school-parents', asyncHandler(c.getSchoolParents));
 router.get('/conversations', asyncHandler(c.getConversations));
 router.get('/conversation', asyncHandler(c.getConversation));
 router.get('/inbox', asyncHandler(c.getInbox));

@@ -41,6 +41,7 @@ const academicYearRoutes = require('./routes/academic-years.routes');
 const conductRoutes = require('./routes/conduct.routes');
 const timetableRoutes = require('./routes/timetable.routes');
 const searchRoutes = require('./routes/search.routes');
+const contactRoutes = require('./routes/contact.routes');
 
 const { errorHandler } = require('./middleware/error.middleware');
 
@@ -100,6 +101,7 @@ app.use('/api/academic-years', academicYearRoutes);
 app.use('/api/conduct', conductRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.use(errorHandler);
 
@@ -118,7 +120,7 @@ const start = async () => {
       break;
     } catch (err) {
       console.log(`⚠️  DB connection attempt ${i}/3 failed: ${err.message}`);
-      if (i < 3) await new Promise(r => setTimeout(r, 3000));
+      if (i < 3) await new Promise(r => setTimeout(r, 5000));
     }
   }
 

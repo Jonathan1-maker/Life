@@ -94,7 +94,6 @@ const generateReportCard = async (req, res) => {
   );
 
   const { rows: [sp] } = await pool.query('SELECT class_id FROM student_profiles WHERE user_id=$1', [student_id]);
-  await pool.query(`ALTER TABLE report_cards ALTER COLUMN term_id DROP NOT NULL`).catch(() => {});
 
   for (const t of terms) {
     const { rows: marks } = await pool.query(
@@ -128,8 +127,6 @@ const getReportCard = async (req, res) => {
   const { student_id, year_id } = req.query;
 
   await ensureConductTable().catch(() => {});
-  // ensure school_level column exists
-  await pool.query(`ALTER TABLE classes ADD COLUMN IF NOT EXISTS school_level VARCHAR(20) DEFAULT 'ordinary'`).catch(() => {});
 
   const { rows: [student] } = await pool.query(
     `SELECT u.first_name, u.last_name, u.gender,

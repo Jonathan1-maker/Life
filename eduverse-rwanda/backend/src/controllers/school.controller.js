@@ -2,6 +2,22 @@ const bcrypt = require('bcryptjs');
 const pool = require('../config/database');
 const { success, paginate } = require('../utils/response.utils');
 
+const getMySchool = async (req, res) => {
+  if (!req.user.school_id) return res.status(404).json({ error: 'No school associated' });
+  const { rows } = await pool.query('SELECT id, name, settings FROM schools WHERE id = $1', [req.user.school_id]);
+  if (!rows[0]) return res.status(404).json({ error: 'School not found' });
+  success(res, rows[0]);
+};
+
+const setMarksLock = async (req, res) => {
+  const { locked } = req.body;
+  await pool.query(
+    `UPDATE schools SET settings = COALESCE(settings, '{}'::jsonb) || jsonb_build_object('marks_locked', $1::boolean), updated_at = NOW() WHERE id = $2`,
+    [locked, req.user.school_id]
+  );
+  success(res, { marks_locked: locked });
+};
+
 const getAllSchools = async (req, res) => {
   const { page = 1, limit = 20, status, search } = req.query;
   const offset = (page - 1) * limit;
@@ -9,7 +25,7 @@ const getAllSchools = async (req, res) => {
   const params = [];
 
   if (status) { params.push(status); where.push(`status = $${params.length}`); }
-  if (search) { params.push(`%${search}%`); where.push(`(name ILIKE $${params.length} OR email ILIKE $${params.length})`); }
+  if (search) { params.push(`%${search}%`); const si = params.length; params.push(`%${search}%`); where.push(`(name ILIKE $${si} OR email ILIKE $${params.length})`); }
 
   const countRes = await pool.query(`SELECT COUNT(*) FROM schools WHERE ${where.join(' AND ')}`, params);
   params.push(limit, offset);
@@ -69,8 +85,14 @@ const updateSchool = async (req, res) => {
 
   fields.forEach((f) => {
     if (req.body[f] !== undefined) {
-      params.push(req.body[f]);
-      updates.push(`${f} = $${params.length}`);
+      if (f === 'settings') {
+        // Merge with existing settings instead of replacing
+        params.push(JSON.stringify(req.body[f]));
+        updates.push(`settings = COALESCE(settings, '{}'::jsonb) || $${params.length}::jsonb`);
+      } else {
+        params.push(req.body[f]);
+        updates.push(`${f} = $${params.length}`);
+      }
     }
   });
 
@@ -147,4 +169,4 @@ const getSchoolStats = async (req, res) => {
   });
 };
 
-module.exports = { getAllSchools, getSchool, createSchool, updateSchool, updateSchoolStatus, deleteSchool, deleteAllSchools, getSchoolStats, clearSchoolData };
+module.exports = { getAllSchools, getSchool, getMySchool, setMarksLock, createSchool, updateSchool, updateSchoolStatus, deleteSchool, deleteAllSchools, getSchoolStats, clearSchoolData };

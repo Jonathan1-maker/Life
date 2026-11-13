@@ -72,4 +72,13 @@ const linkChild = async (req, res) => {
   success(res, null, 'Child linked');
 };
 
-module.exports = { getParents, createParent, deleteParent, getParentChildren, linkChild };
+const unlinkChild = async (req, res) => {
+  const { student_id } = req.body;
+  await pool.query(
+    `DELETE FROM parent_student_links WHERE parent_id=$1 AND student_id=$2`,
+    [req.params.id, student_id]
+  );
+  success(res, null, 'Child unlinked');
+};
+
+module.exports = { getParents, createParent, deleteParent, getParentChildren, linkChild, unlinkChild };

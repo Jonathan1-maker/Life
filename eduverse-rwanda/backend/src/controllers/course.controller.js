@@ -8,6 +8,11 @@ const getCourses = async (req, res) => {
   if (class_id) { params.push(class_id); where.push(`c.class_id=$${params.length}`); }
   if (subject_id) { params.push(subject_id); where.push(`c.subject_id=$${params.length}`); }
   if (req.user.role === 'teacher') { params.push(req.user.id); where.push(`c.teacher_id=$${params.length}`); }
+  if (req.user.role === 'student') {
+    params.push(req.user.id);
+    where.push(`c.class_id = (SELECT class_id FROM student_profiles WHERE user_id=$${params.length})`);
+    where.push(`c.is_published = true`);
+  }
 
   const { rows } = await pool.query(
     `SELECT c.*, s.name as subject_name, cl.name as class_name,

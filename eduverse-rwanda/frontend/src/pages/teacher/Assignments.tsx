@@ -56,7 +56,7 @@ export default function TeacherAssignments() {
 
   return (
     <div className="space-y-6 fade-in">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div><h1 className="page-title">Assignments</h1><p className="text-sm text-gray-500">Manage class assignments</p></div>
         <button onClick={() => setShowModal(true)} className="btn-primary"><Plus size={15} /> Create Assignment</button>
       </div>
@@ -169,7 +169,8 @@ export default function TeacherAssignments() {
               ) : submissions.length === 0 ? (
                 <p className="text-center text-gray-400 py-8">No submissions yet</p>
               ) : (
-                <table className="w-full">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[400px]">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
                       <th className="table-header">Student</th>
@@ -191,6 +192,7 @@ export default function TeacherAssignments() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </div>

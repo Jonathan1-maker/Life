@@ -65,7 +65,7 @@ export default function TeacherAttendance() {
 
   return (
     <div className="space-y-6 fade-in max-w-3xl">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div><h1 className="page-title">Attendance</h1><p className="text-sm text-gray-500">Mark student attendance</p></div>
       </div>
 
@@ -114,7 +114,7 @@ export default function TeacherAttendance() {
               <p className="text-center text-gray-400 py-10 text-sm">No students in this class</p>
             ) : (
               (students || []).map((s: any, i: number) => (
-                <div key={s.id} className={`flex items-center justify-between px-5 py-3 ${i < (students || []).length - 1 ? 'border-b border-gray-50' : ''}`}>
+                <div key={s.id} className={`flex items-center justify-between flex-wrap gap-2 px-5 py-3 ${i < (students || []).length - 1 ? 'border-b border-gray-50' : ''}`}>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-gray-400 w-5">{i + 1}</span>
                     <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 text-xs font-bold">

@@ -116,7 +116,6 @@ const assignSubject = async (req, res) => {
   const { subject_id, class_id, stream_id, academic_year_id } = req.body;
   const school_id = req.user.school_id;
 
-  // get current academic year if not provided
   let yearId = academic_year_id || null;
   if (!yearId) {
     const { rows: years } = await pool.query(
@@ -126,14 +125,22 @@ const assignSubject = async (req, res) => {
     if (years[0]) yearId = years[0].id;
   }
 
-  // if still no year, make column nullable first then insert
-  await pool.query(`ALTER TABLE teacher_subjects ALTER COLUMN academic_year_id DROP NOT NULL`).catch(() => {});
-
   const { rows } = await pool.query(
     `INSERT INTO teacher_subjects (school_id, teacher_id, subject_id, class_id, stream_id, academic_year_id)
      VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING RETURNING *`,
     [school_id, req.params.id, subject_id, class_id, stream_id || null, yearId]
-  );
+  ).catch(async (err) => {
+    // If academic_year_id has NOT NULL constraint, make it nullable then retry
+    if (err.code === '23502' && err.column === 'academic_year_id') {
+      await pool.query(`ALTER TABLE teacher_subjects ALTER COLUMN academic_year_id DROP NOT NULL`).catch(() => {});
+      return pool.query(
+        `INSERT INTO teacher_subjects (school_id, teacher_id, subject_id, class_id, stream_id, academic_year_id)
+         VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING RETURNING *`,
+        [school_id, req.params.id, subject_id, class_id, stream_id || null, yearId]
+      );
+    }
+    throw err;
+  });
   success(res, rows[0], 'Subject assigned', 201);
 };
 

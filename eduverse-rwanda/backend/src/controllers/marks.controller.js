@@ -13,6 +13,13 @@ const getGrade = (score, total) => {
 
 const enterMarks = async (req, res) => {
   const { assessment_id, marks } = req.body;
+
+  // Check if school admin has locked marks entry
+  const { rows: [school] } = await pool.query('SELECT settings FROM schools WHERE id=$1', [req.user.school_id]);
+  if (school?.settings?.marks_locked === true) {
+    return res.status(403).json({ error: 'Marks entry is currently locked by the school administrator.' });
+  }
+
   const { rows: [assessment] } = await pool.query('SELECT total_marks FROM assessments WHERE id=$1', [assessment_id]);
   const client = await pool.connect();
   try {

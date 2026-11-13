@@ -8,5 +8,6 @@ router.use(authenticate);
 router.get('/overview', authorize('super_admin'), asyncHandler(c.getPlatformAnalytics));
 router.get('/platform', authorize('super_admin'), asyncHandler(c.getPlatformAnalytics));
 router.get('/school', authorize('super_admin', 'school_admin'), asyncHandler(c.getSchoolAnalytics));
+router.post('/custom-report', authorize('super_admin'), asyncHandler(c.getCustomReport));
 
 module.exports = router;

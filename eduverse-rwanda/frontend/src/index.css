@@ -27,6 +27,7 @@
   .table-header { @apply text-left text-xs font-semibold text-gray-500 uppercase tracking-wider py-3 px-4; }
   .table-cell { @apply py-3 px-4 text-sm text-gray-700; }
   .table-row { @apply border-b border-gray-50 hover:bg-gray-50 transition-colors; }
+  .table-wrap { @apply overflow-x-auto -mx-0; }
 }
 
 /* Print styles */

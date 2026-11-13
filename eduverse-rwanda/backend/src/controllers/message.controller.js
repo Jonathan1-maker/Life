@@ -59,6 +59,29 @@ const getSuperAdmin = async (req, res) => {
   success(res, rows[0] || null);
 };
 
+// get school admin for a parent to DM
+const getSchoolAdminContact = async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT id, first_name || ' ' || last_name as name, email FROM users WHERE school_id=$1 AND role='school_admin' LIMIT 1`,
+    [req.user.school_id]
+  );
+  success(res, rows[0] || null);
+};
+
+// get all parents in the school for messaging
+const getSchoolParents = async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT u.id, u.first_name || ' ' || u.last_name as name, u.email, u.role,
+            COUNT(m.id) FILTER (WHERE m.receiver_id=$1 AND m.is_read=false) as unread_count
+     FROM users u
+     LEFT JOIN messages m ON (m.sender_id=u.id)
+     WHERE u.school_id=$2 AND u.role='parent'
+     GROUP BY u.id ORDER BY u.first_name`,
+    [req.user.id, req.user.school_id]
+  );
+  success(res, rows);
+};
+
 const getInbox = async (req, res) => {
   const { rows } = await pool.query(
     `SELECT m.*, u.first_name || ' ' || u.last_name as sender_name, u.avatar_url as sender_avatar
@@ -114,4 +137,4 @@ const getUnreadCount = async (req, res) => {
   success(res, { count: parseInt(rows[0].count) });
 };
 
-module.exports = { getInbox, getConversation, getConversations, getSuperAdmin, sendMessage, deleteMessage, markRead, getUnreadCount };
+module.exports = { getInbox, getConversation, getConversations, getSuperAdmin, getSchoolAdminContact, getSchoolParents, sendMessage, deleteMessage, markRead, getUnreadCount };

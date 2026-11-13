@@ -8,9 +8,14 @@ const getAssignments = async (req, res) => {
   if (class_id) { params.push(class_id); where.push(`a.class_id=$${params.length}`); }
   if (subject_id) { params.push(subject_id); where.push(`a.subject_id=$${params.length}`); }
   if (req.user.role === 'teacher') { params.push(req.user.id); where.push(`a.teacher_id=$${params.length}`); }
+  if (req.user.role === 'student') {
+    params.push(req.user.id);
+    where.push(`a.class_id = (SELECT class_id FROM student_profiles WHERE user_id=$${params.length})`);
+  }
 
   const { rows } = await pool.query(
-    `SELECT a.*, s.name as subject_name, c.name as class_name, u.first_name || ' ' || u.last_name as teacher_name
+    `SELECT a.*, s.name as subject_name, c.name as class_name, u.first_name || ' ' || u.last_name as teacher_name,
+            (SELECT id FROM assignment_submissions WHERE assignment_id=a.id AND student_id=$1) IS NOT NULL as submitted
      FROM assignments a JOIN subjects s ON s.id=a.subject_id JOIN classes c ON c.id=a.class_id JOIN users u ON u.id=a.teacher_id
      WHERE ${where.join(' AND ')} ORDER BY a.due_date`,
     params

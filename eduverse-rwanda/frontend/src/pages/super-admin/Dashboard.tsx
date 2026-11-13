@@ -4,6 +4,7 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContai
 import { School, Users, GraduationCap, Activity, Plus, TrendingUp, MessageSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 const COLORS = ['#2563eb', '#e2e8f0']
 const PLAN_COLORS: Record<string, string> = {
@@ -12,6 +13,7 @@ const PLAN_COLORS: Record<string, string> = {
 
 export default function SuperDashboard() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const { data, isLoading } = useQuery({
     queryKey: ['super-dashboard'],
@@ -40,10 +42,10 @@ export default function SuperDashboard() {
     : [{ name: 'No data', value: 1 }]
 
   const stats = [
-    { label: 'Total Schools',   value: schools?.total ?? 0,   sub: `+${schools?.this_month ?? 0} this month`,   icon: School,       color: 'bg-blue-50 text-blue-600' },
-    { label: 'Total Students',  value: students?.total ?? 0,  sub: `+${students?.this_month ?? 0} this month`,  icon: GraduationCap, color: 'bg-green-50 text-green-600' },
-    { label: 'Teachers',        value: teachers?.total ?? 0,  sub: `+${teachers?.this_month ?? 0} this month`,  icon: Users,         color: 'bg-purple-50 text-purple-600' },
-    { label: 'Active Users',    value: activeUsers,           sub: 'last 30 days',                              icon: Activity,      color: 'bg-orange-50 text-orange-600' },
+    { label: t('superAdmin.totalSchools'),  value: schools?.total ?? 0,   sub: `+${schools?.this_month ?? 0} ${t('superAdmin.thisMonth')}`,   icon: School,       color: 'bg-blue-50 text-blue-600' },
+    { label: t('superAdmin.totalStudents'), value: students?.total ?? 0,  sub: `+${students?.this_month ?? 0} ${t('superAdmin.thisMonth')}`,  icon: GraduationCap, color: 'bg-green-50 text-green-600' },
+    { label: t('superAdmin.teachers'),      value: teachers?.total ?? 0,  sub: `+${teachers?.this_month ?? 0} ${t('superAdmin.thisMonth')}`,  icon: Users,         color: 'bg-purple-50 text-purple-600' },
+    { label: t('superAdmin.activeUsers'),   value: activeUsers,           sub: t('superAdmin.last30Days'),                                    icon: Activity,      color: 'bg-orange-50 text-orange-600' },
   ]
 
   if (isLoading) return (
@@ -55,15 +57,15 @@ export default function SuperDashboard() {
   return (
     <div className="space-y-6 fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="page-title">Welcome back, Super Admin! 👋</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Here's what's happening across all schools today.</p>
+          <h1 className="page-title">{t('superAdmin.welcomeBack')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t('superAdmin.welcomeSub')}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm text-gray-500">{format(new Date(), 'MMM dd, yyyy')}</span>
           <button onClick={() => navigate('/super-admin/schools')} className="btn-primary">
-            <Plus size={15} /> Add School
+            <Plus size={15} /> {t('superAdmin.addSchool')}
           </button>
         </div>
       </div>
@@ -90,7 +92,7 @@ export default function SuperDashboard() {
       <div className="grid lg:grid-cols-3 gap-5">
         {/* Performance trend from DB */}
         <div className="card p-5 lg:col-span-2">
-          <h3 className="section-title mb-4">Student Performance Overview</h3>
+          <h3 className="section-title mb-4">{t('superAdmin.performanceOverview')}</h3>
           {perfTrend.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={perfTrend}>
@@ -110,14 +112,14 @@ export default function SuperDashboard() {
             <div className="h-48 flex flex-col items-center justify-center text-gray-300">
               <TrendingUp size={40} className="mb-2 opacity-40" />
               <p className="text-sm">No performance data yet</p>
-              <p className="text-xs">Data will appear once assessments are entered</p>
+              <p className="text-xs">{t('superAdmin.noPerformanceDataSub')}</p>
             </div>
           )}
         </div>
 
         {/* Top Schools from DB */}
         <div className="card p-5">
-          <h3 className="section-title mb-4">Top Performing Schools</h3>
+          <h3 className="section-title mb-4">{t('superAdmin.topSchools')}</h3>
           {topSchools.length > 0 ? (
             <div className="space-y-3">
               {topSchools.map((s: any, i: number) => (
@@ -138,7 +140,7 @@ export default function SuperDashboard() {
           ) : (
             <div className="h-40 flex flex-col items-center justify-center text-gray-300">
               <School size={36} className="mb-2 opacity-40" />
-              <p className="text-sm">No schools yet</p>
+              <p className="text-sm">{t('superAdmin.noSchools')}</p>
             </div>
           )}
         </div>
@@ -148,7 +150,7 @@ export default function SuperDashboard() {
       <div className="grid lg:grid-cols-3 gap-5">
         {/* Revenue donut */}
         <div className="card p-5">
-          <h3 className="section-title mb-1">Subscriptions</h3>
+          <h3 className="section-title mb-1">{t('superAdmin.subscriptions')}</h3>
           <div className="flex items-center gap-4 mt-3">
             <PieChart width={100} height={100}>
               <Pie data={revenueDonut} cx={45} cy={45} innerRadius={28} outerRadius={45} dataKey="value" startAngle={90} endAngle={-270}>
@@ -156,7 +158,7 @@ export default function SuperDashboard() {
               </Pie>
             </PieChart>
             <div>
-              <p className="text-xs text-gray-400">Total Revenue</p>
+              <p className="text-xs text-gray-400">{t('superAdmin.totalRevenue')}</p>
               <p className="text-2xl font-bold text-gray-900">{totalRevenue}</p>
               <p className="text-xs text-gray-400 mt-0.5">+{revenue?.this_month ?? 0} this month</p>
             </div>
@@ -165,7 +167,7 @@ export default function SuperDashboard() {
 
         {/* Schools by plan from DB */}
         <div className="card p-5">
-          <h3 className="section-title mb-4">Schools by Plan</h3>
+          <h3 className="section-title mb-4">{t('superAdmin.schoolsByPlan')}</h3>
           {planData.length > 0 ? (
             <ResponsiveContainer width="100%" height={100}>
               <BarChart data={planData} barSize={20}>
@@ -177,15 +179,15 @@ export default function SuperDashboard() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-24 flex items-center justify-center text-gray-300 text-sm">No plan data yet</div>
+            <div className="h-24 flex items-center justify-center text-gray-300 text-sm">{t('superAdmin.noPlans')}</div>
           )}
         </div>
 
         {/* Recent activities from DB */}
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="section-title">Recent Activities</h3>
-            <button onClick={() => navigate('/super-admin/audit-logs')} className="text-xs text-primary-600 font-medium hover:underline">View all</button>
+            <h3 className="section-title">{t('superAdmin.recentActivities')}</h3>
+            <button onClick={() => navigate('/super-admin/audit-logs')} className="text-xs text-primary-600 font-medium hover:underline">{t('common.viewAll')}</button>
           </div>
           {activities.length > 0 ? (
             <div className="space-y-3">
@@ -207,7 +209,7 @@ export default function SuperDashboard() {
           ) : (
             <div className="h-32 flex flex-col items-center justify-center text-gray-300">
               <Activity size={28} className="mb-1 opacity-40" />
-              <p className="text-sm">No recent activity</p>
+              <p className="text-sm">{t('superAdmin.noActivity')}</p>
             </div>
           )}
         </div>
@@ -220,13 +222,13 @@ export default function SuperDashboard() {
             <MessageSquare size={18} className="text-blue-600" />
           </div>
           <div>
-            <p className="font-semibold text-gray-800">{unreadMsgs} Unread message{unreadMsgs !== 1 ? 's' : ''}</p>
+            <p className="font-semibold text-gray-800">{unreadMsgs} {unreadMsgs !== 1 ? t('superAdmin.unreadMessagesPlural') : t('superAdmin.unreadMessages')}</p>
             <p className="text-xs text-gray-500">
-              {unreadMsgs > 0 ? 'You have messages waiting for your response' : 'You are all caught up!'}
+              {unreadMsgs > 0 ? t('superAdmin.messagesWaiting') : t('superAdmin.allCaughtUp')}
             </p>
           </div>
         </div>
-        <button onClick={() => navigate('/super-admin/messages')} className="btn-primary">View Messages</button>
+        <button onClick={() => navigate('/super-admin/messages')} className="btn-primary">{t('superAdmin.viewMessages')}</button>
       </div>
     </div>
   )

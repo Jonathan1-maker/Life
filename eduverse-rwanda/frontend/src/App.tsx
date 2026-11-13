@@ -1,3 +1,4 @@
+import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './store/auth'
 import LandingPage from './pages/LandingPage'
@@ -50,9 +51,37 @@ import ParentMessages from './pages/parent/Messages'
 type Role = 'super_admin' | 'school_admin' | 'teacher' | 'student' | 'parent'
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: Role[] }) {
-  const { user, token } = useAuth()
+  const { user, token, logout } = useAuth()
+  const [checked, setChecked] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!token) { setChecked(true); return }
+    // Decode token to check school_id — if missing for non-super_admin, force refresh
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const needsRefresh = user?.role !== 'super_admin' && !payload.school_id
+      if (needsRefresh) {
+        const refreshToken = localStorage.getItem('refreshToken')
+        if (!refreshToken) { logout(); setChecked(true); return }
+        import('./lib/api').then(({ default: api }) => {
+          api.post('/auth/refresh', { refreshToken })
+            .then(r => {
+              const newToken = r.data.data.accessToken
+              localStorage.setItem('token', newToken)
+              useAuth.setState(s => ({ ...s, token: newToken }))
+            })
+            .catch(() => logout())
+            .finally(() => setChecked(true))
+        })
+      } else {
+        setChecked(true)
+      }
+    } catch { setChecked(true) }
+  }, [])
+
   if (!token || !user) return <Navigate to="/login" replace />
   if (roles && !roles.includes(user.role as Role)) return <Navigate to="/" replace />
+  if (!checked) return null
   return <>{children}</>
 }
 

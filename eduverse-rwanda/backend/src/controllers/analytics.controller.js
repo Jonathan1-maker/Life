@@ -112,4 +112,69 @@ const getSchoolAnalytics = async (req, res) => {
   });
 };
 
-module.exports = { getPublicStats, getPlatformAnalytics, getSchoolAnalytics };
+const getCustomReport = async (req, res) => {
+  const { startDate, endDate, metric } = req.body;
+  const from = startDate || '2000-01-01';
+  const to   = endDate   || new Date().toISOString().split('T')[0];
+
+  let data = {};
+
+  if (!metric || metric === 'enrollments') {
+    const { rows } = await pool.query(
+      `SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as month, COUNT(*) as students
+       FROM users WHERE role='student' AND created_at BETWEEN $1 AND $2::date + interval '1 day'
+       GROUP BY DATE_TRUNC('month', created_at) ORDER BY DATE_TRUNC('month', created_at)`,
+      [from, to]
+    );
+    data.enrollments = rows;
+  }
+
+  if (!metric || metric === 'schools') {
+    const { rows } = await pool.query(
+      `SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as month, COUNT(*) as schools
+       FROM schools WHERE created_at BETWEEN $1 AND $2::date + interval '1 day'
+       GROUP BY DATE_TRUNC('month', created_at) ORDER BY DATE_TRUNC('month', created_at)`,
+      [from, to]
+    );
+    data.schools = rows;
+  }
+
+  if (!metric || metric === 'activity') {
+    const { rows } = await pool.query(
+      `SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD') as day, COUNT(*) as actions
+       FROM audit_logs WHERE created_at BETWEEN $1 AND $2::date + interval '1 day'
+       GROUP BY DATE_TRUNC('day', created_at) ORDER BY DATE_TRUNC('day', created_at)`,
+      [from, to]
+    );
+    data.activity = rows;
+  }
+
+  if (!metric || metric === 'performance') {
+    const { rows } = await pool.query(
+      `SELECT s.name as school, ROUND(AVG(rc.average),1) as avg_score, COUNT(rc.id) as report_cards
+       FROM report_cards rc JOIN schools s ON s.id=rc.school_id
+       WHERE rc.generated_at BETWEEN $1 AND $2::date + interval '1 day'
+       GROUP BY s.name ORDER BY avg_score DESC LIMIT 20`,
+      [from, to]
+    );
+    data.performance = rows;
+  }
+
+  // summary counts
+  const [newStudents, newSchools, auditCount] = await Promise.all([
+    pool.query(`SELECT COUNT(*) FROM users WHERE role='student' AND created_at BETWEEN $1 AND $2::date + interval '1 day'`, [from, to]),
+    pool.query(`SELECT COUNT(*) FROM schools WHERE created_at BETWEEN $1 AND $2::date + interval '1 day'`, [from, to]),
+    pool.query(`SELECT COUNT(*) FROM audit_logs WHERE created_at BETWEEN $1 AND $2::date + interval '1 day'`, [from, to]),
+  ]);
+
+  data.summary = {
+    newStudents: parseInt(newStudents.rows[0].count),
+    newSchools:  parseInt(newSchools.rows[0].count),
+    totalActions: parseInt(auditCount.rows[0].count),
+    from, to,
+  };
+
+  success(res, data);
+};
+
+module.exports = { getPublicStats, getPlatformAnalytics, getSchoolAnalytics, getCustomReport };

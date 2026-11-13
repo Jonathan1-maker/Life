@@ -10,5 +10,6 @@ router.post('/', authorize('super_admin', 'school_admin'), asyncHandler(c.create
 router.delete('/:id', authorize('super_admin', 'school_admin'), asyncHandler(c.deleteParent));
 router.get('/:id/children', asyncHandler(c.getParentChildren));
 router.post('/:id/link-child', authorize('super_admin', 'school_admin'), asyncHandler(c.linkChild));
+router.delete('/:id/unlink-child', authorize('super_admin', 'school_admin'), asyncHandler(c.unlinkChild));
 
 module.exports = router;

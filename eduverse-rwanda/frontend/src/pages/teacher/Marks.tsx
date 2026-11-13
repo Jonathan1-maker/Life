@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../lib/api'
-import { Save, Plus, Trash2, X, Loader2, CheckCircle2, BookOpen } from 'lucide-react'
+import { Save, Plus, Trash2, X, Loader2, CheckCircle2, BookOpen, Lock } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const emptyForm = { title: '', type: 'exam', total_marks: '100', date: '', subject_id: '', term_id: '' }
@@ -19,13 +19,9 @@ const getGrade = (score: number, total: number) => {
 export default function TeacherMarks() {
   const qc = useQueryClient()
 
-  // Step 1 — Term selection (prominent, required first)
   const [selectedTermId, setSelectedTermId] = useState('')
-  // Step 2 — Class
   const [selectedClass, setSelectedClass]   = useState('')
-  // Step 3 — Assessment
   const [selectedAssessment, setSelectedAssessment] = useState('')
-
   const [marks, setMarks]           = useState<Record<string, string>>({})
   const [savedMark, setSavedMark]   = useState(false)
   const [showCreate, setShowCreate] = useState(false)
@@ -37,6 +33,16 @@ export default function TeacherMarks() {
     queryFn: () => api.get('/terms').then(r => r.data.data || []),
     retry: false,
   })
+
+  const { data: schoolSettings } = useQuery({
+    queryKey: ['school-settings'],
+    queryFn: () => api.get('/schools/my').then(r => r.data.data?.settings || {}),
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchInterval: 10000,
+  })
+  const marksLocked = !!schoolSettings?.marks_locked
 
   const { data: myData } = useQuery({
     queryKey: ['my-assignments'],
@@ -51,13 +57,14 @@ export default function TeacherMarks() {
   ] as { id: string; name: string }[]
 
   const subjectsForClass = (myData || []).filter((a: any) => a.class_id === selectedClass)
+  const assignedSubjectIds: string[] = subjectsForClass.map((a: any) => a.subject_id)
 
   const { data: assessments, refetch: refetchAssessments } = useQuery({
-    queryKey: ['assessments', selectedClass, selectedTermId],
+    queryKey: ['assessments', selectedClass, selectedTermId, assignedSubjectIds.join(',')],
     queryFn: () =>
       api.get(`/assessments?class_id=${selectedClass}${selectedTermId ? `&term_id=${selectedTermId}` : ''}`)
-        .then(r => r.data.data || []),
-    enabled: !!selectedClass && !!selectedTermId,
+        .then(r => (r.data.data || []).filter((a: any) => assignedSubjectIds.includes(a.subject_id))),
+    enabled: !!selectedClass && !!selectedTermId && assignedSubjectIds.length > 0,
   })
 
   const { data: students, isLoading: loadingStudents } = useQuery({
@@ -66,7 +73,6 @@ export default function TeacherMarks() {
     enabled: !!selectedClass,
   })
 
-  // Load existing marks when assessment changes — always fetch fresh, never use cache
   const { isFetching: loadingMarks } = useQuery({
     queryKey: ['marks-assessment', selectedAssessment],
     queryFn: async () => {
@@ -87,7 +93,7 @@ export default function TeacherMarks() {
     mutationFn: (payload: any) => api.post('/assessments', payload),
     onSuccess: () => {
       toast.success('Assessment created!')
-      qc.invalidateQueries({ queryKey: ['assessments', selectedClass, selectedTermId] })
+      qc.invalidateQueries({ queryKey: ['assessments', selectedClass, selectedTermId, assignedSubjectIds.join(',')] })
       refetchAssessments()
       setShowCreate(false)
       setForm({ ...emptyForm })
@@ -102,7 +108,7 @@ export default function TeacherMarks() {
       setSelectedAssessment('')
       setMarks({})
       setSavedMark(false)
-      qc.invalidateQueries({ queryKey: ['assessments', selectedClass, selectedTermId] })
+      qc.invalidateQueries({ queryKey: ['assessments', selectedClass, selectedTermId, assignedSubjectIds.join(',')] })
     },
     onError: () => toast.error('Failed to delete'),
   })
@@ -122,7 +128,7 @@ export default function TeacherMarks() {
       setSavedMark(true)
       qc.invalidateQueries({ queryKey: ['marks-assessment', selectedAssessment] })
     },
-    onError: () => toast.error('Failed to save marks'),
+    onError: (err: any) => toast.error(err.response?.data?.error || 'Failed to save marks'),
   })
 
   const assessment = (assessments || []).find((a: any) => a.id === selectedAssessment)
@@ -149,7 +155,6 @@ export default function TeacherMarks() {
 
   const handleAssessmentChange = (aid: string) => {
     setSelectedAssessment(aid)
-    // Don't clear marks here — the query will overwrite with real data
     setSavedMark(false)
   }
 
@@ -158,19 +163,30 @@ export default function TeacherMarks() {
     <div className="space-y-6 fade-in">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="page-title">Marks</h1>
           <p className="text-sm text-gray-500">Manage assessments and enter student marks</p>
         </div>
-        {selectedClass && selectedTermId && (
+        {selectedClass && selectedTermId && !marksLocked && (
           <button onClick={() => setShowCreate(true)} className="btn-secondary">
             <Plus size={15} /> New Assessment
           </button>
         )}
       </div>
 
-      {/* ── STEP 1: Term selector — prominent card ── */}
+      {/* Locked banner */}
+      {marksLocked && (
+        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+          <Lock size={18} className="shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">Marks Entry is Locked</p>
+            <p className="text-xs mt-0.5">The school administrator has locked marks entry. Contact your admin to unlock it.</p>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 1: Term selector */}
       <div className="card p-5">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm">1</div>
@@ -197,7 +213,7 @@ export default function TeacherMarks() {
         </div>
       </div>
 
-      {/* ── STEP 2 & 3: Class + Assessment filters ── */}
+      {/* STEP 2 & 3: Class + Assessment */}
       {selectedTermId && (
         <div className="card p-4 flex flex-wrap gap-3 items-end">
           <div className="flex items-center gap-3 w-full mb-1">
@@ -243,13 +259,13 @@ export default function TeacherMarks() {
           {selectedClass && (assessments || []).length === 0 && (
             <p className="text-xs text-gray-400 w-full">
               No assessments for this term &amp; class yet.{' '}
-              <button onClick={() => setShowCreate(true)} className="text-primary-600 underline font-medium">Create one</button>
+              {!marksLocked && <button onClick={() => setShowCreate(true)} className="text-primary-600 underline font-medium">Create one</button>}
             </p>
           )}
         </div>
       )}
 
-      {/* ── Prompt when no term selected ── */}
+      {/* Prompt when no term selected */}
       {!selectedTermId && (
         <div className="card flex items-center justify-center h-32 gap-3">
           <BookOpen size={20} className="text-gray-300" />
@@ -257,11 +273,10 @@ export default function TeacherMarks() {
         </div>
       )}
 
-      {/* ── Marks table ── */}
+      {/* Marks table */}
       {selectedAssessment && (
-        <div className="card overflow-hidden">
-          {/* Table header */}
-          <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+        <div className="card overflow-x-auto">
+          <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-gray-800">{assessment?.title}</span>
               <span className="badge bg-purple-100 text-purple-600">{assessment?.subject_name}</span>
@@ -276,7 +291,7 @@ export default function TeacherMarks() {
               <span className="text-sm text-gray-500">Total: <strong>{assessment?.total_marks}</strong> marks</span>
               <button
                 onClick={() => saveMutation.mutate()}
-                disabled={saveMutation.isPending || (students || []).length === 0}
+                disabled={saveMutation.isPending || (students || []).length === 0 || marksLocked}
                 className="btn-primary py-1.5 px-4 text-sm"
               >
                 {saveMutation.isPending
@@ -286,7 +301,7 @@ export default function TeacherMarks() {
             </div>
           </div>
 
-          <table className="w-full">
+          <table className="w-full min-w-[500px]">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="table-header">#</th>
@@ -332,6 +347,7 @@ export default function TeacherMarks() {
                           onChange={e => { setMarks(m => ({ ...m, [s.id]: e.target.value })); setSavedMark(false) }}
                           className="input w-24 text-center"
                           placeholder="0"
+                          disabled={marksLocked}
                         />
                       </td>
                       <td className="table-cell">
@@ -349,12 +365,11 @@ export default function TeacherMarks() {
             </tbody>
           </table>
 
-          {/* Bottom save button for long lists */}
           {(students || []).length > 5 && (
             <div className="px-5 py-3 border-t border-gray-100 flex justify-end">
               <button
                 onClick={() => saveMutation.mutate()}
-                disabled={saveMutation.isPending}
+                disabled={saveMutation.isPending || marksLocked}
                 className="btn-primary py-1.5 px-4 text-sm"
               >
                 {saveMutation.isPending
@@ -366,7 +381,7 @@ export default function TeacherMarks() {
         </div>
       )}
 
-      {/* ── Create Assessment Modal ── */}
+      {/* Create Assessment Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -388,7 +403,6 @@ export default function TeacherMarks() {
                 />
               </div>
 
-              {/* Term — pre-filled from selection but editable */}
               <div>
                 <label className="label">Term</label>
                 <select

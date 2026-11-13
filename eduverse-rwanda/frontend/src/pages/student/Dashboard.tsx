@@ -3,10 +3,12 @@ import { useAuth } from '../../store/auth'
 import api from '../../lib/api'
 import { BookOpen, ClipboardList, TrendingUp, Calendar } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 export default function StudentDashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   const { data: assignments } = useQuery({
     queryKey: ['student-assignments'],
@@ -39,25 +41,25 @@ export default function StudentDashboard() {
   }
 
   const quickAccess = [
-    { label: 'Results', icon: '📊', path: '/student/results' },
-    { label: 'Assignments', icon: '📝', path: '/student/assignments' },
-    { label: 'Courses', icon: '📚', path: '/student/courses' },
-    { label: 'Timetable', icon: '📅', path: '/student/timetable' },
+    { label: t('student.resultsTitle'), icon: '📊', path: '/student/results' },
+    { label: t('student.assignmentsTitle'), icon: '📝', path: '/student/assignments' },
+    { label: t('student.coursesTitle'), icon: '📚', path: '/student/courses' },
+    { label: t('student.timetableTitle'), icon: '📅', path: '/student/timetable' },
   ]
 
   return (
     <div className="space-y-6 fade-in">
       <div>
-        <h1 className="page-title">Hello, {user?.name?.split(' ')[0]}! 👋</h1>
-        <p className="text-sm text-gray-500">Welcome to your dashboard</p>
+        <h1 className="page-title">{t('student.hello')}, {user?.name?.split(' ')[0]}! 👋</h1>
+        <p className="text-sm text-gray-500">{t('student.welcomeDashboard')}</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'My Courses', val: (courses || []).length, icon: BookOpen, color: 'text-blue-600 bg-blue-50' },
-          { label: 'Assignments Due', val: pending, icon: ClipboardList, color: 'text-orange-600 bg-orange-50' },
-          { label: 'Total Assignments', val: (assignments || []).length, icon: TrendingUp, color: 'text-green-600 bg-green-50' },
-          { label: 'Announcements', val: (announcements || []).length, icon: Calendar, color: 'text-purple-600 bg-purple-50' },
+          { label: t('student.myCourses'), val: (courses || []).length, icon: BookOpen, color: 'text-blue-600 bg-blue-50' },
+          { label: t('student.assignmentsDue'), val: pending, icon: ClipboardList, color: 'text-orange-600 bg-orange-50' },
+          { label: t('student.totalAssignments'), val: (assignments || []).length, icon: TrendingUp, color: 'text-green-600 bg-green-50' },
+          { label: t('student.announcements'), val: (announcements || []).length, icon: Calendar, color: 'text-purple-600 bg-purple-50' },
         ].map(s => (
           <div key={s.label} className="stat-card">
             <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${s.color}`}><s.icon size={20} /></div>
@@ -69,7 +71,7 @@ export default function StudentDashboard() {
       <div className="grid lg:grid-cols-2 gap-5">
         {/* Quick access */}
         <div className="card p-5">
-          <h3 className="section-title mb-4">Quick Access</h3>
+          <h3 className="section-title mb-4">{t('student.quickAccess')}</h3>
           <div className="grid grid-cols-2 gap-3">
             {quickAccess.map(q => (
               <button key={q.label} onClick={() => navigate(q.path)} className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 hover:bg-primary-50 hover:text-primary-700 transition-colors text-left">
@@ -82,9 +84,9 @@ export default function StudentDashboard() {
 
         {/* Announcements from DB */}
         <div className="card p-5">
-          <h3 className="section-title mb-4">Announcements</h3>
+          <h3 className="section-title mb-4">{t('student.announcements')}</h3>
           {(announcements || []).length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">No announcements</p>
+            <p className="text-sm text-gray-400 text-center py-8">{t('student.noAnnouncements')}</p>
           ) : (
             <div className="space-y-3">
               {(announcements || []).slice(0, 4).map((a: any) => (
@@ -102,11 +104,11 @@ export default function StudentDashboard() {
       {/* Recent assignments */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="section-title">Recent Assignments</h3>
-          <button onClick={() => navigate('/student/assignments')} className="text-xs text-primary-600 font-medium hover:underline">View all</button>
+          <h3 className="section-title">{t('student.recentAssignments')}</h3>
+          <button onClick={() => navigate('/student/assignments')} className="text-xs text-primary-600 font-medium hover:underline">{t('common.viewAll')}</button>
         </div>
         {(assignments || []).length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">No assignments yet</p>
+          <p className="text-sm text-gray-400 text-center py-6">{t('student.noAssignments')}</p>
         ) : (
           <div className="grid md:grid-cols-2 gap-3">
             {(assignments || []).slice(0, 4).map((a: any) => (
@@ -116,7 +118,7 @@ export default function StudentDashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{a.title}</p>
-                  <p className="text-xs text-gray-400">{a.subject_name} · Due: {a.due_date ? new Date(a.due_date).toLocaleDateString() : '—'}</p>
+                  <p className="text-xs text-gray-400">{a.subject_name} · {t('student.due')}: {a.due_date ? new Date(a.due_date).toLocaleDateString() : '—'}</p>
                 </div>
                 <span className="badge bg-orange-100 text-orange-600 text-xs flex-shrink-0">{a.class_name}</span>
               </div>

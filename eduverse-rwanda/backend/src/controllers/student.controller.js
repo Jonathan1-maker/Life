@@ -3,8 +3,9 @@ const pool = require('../config/database');
 const { success, paginate } = require('../utils/response.utils');
 
 const getStudents = async (req, res) => {
-  const { page = 1, limit = 20, class_id, search, status } = req.query;
+  const { page = 1, limit = 50, class_id, search, status } = req.query;
   const school_id = req.user.school_id;
+  if (!school_id) return res.json({ success: true, data: [], pagination: { total: 0, page: 1, limit: 50, pages: 0 } });
   const offset = (page - 1) * limit;
 
   const params = [school_id];

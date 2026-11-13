@@ -1,10 +1,12 @@
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import api from '../lib/api'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowRight, Play, School, BarChart3, Brain, Users, BookOpen, MessageCircle,
-  ChevronRight, CheckCircle, Star, Phone, Mail, MapPin, Shield, Zap, Globe,
-  TrendingUp, Award, Clock
+  ChevronRight, CheckCircle, Phone, Mail, MapPin, Shield, Zap,
+  TrendingUp, Award
 } from 'lucide-react'
 
 const features = [
@@ -59,52 +61,29 @@ const featureCards = [
 
 
 
-const plans = [
-  {
-    name: 'Basic', price: '$49', period: '/month', color: 'border-gray-200',
-    badge: '', badgeColor: '',
-    features: ['Up to 200 students', '5 teacher accounts', 'Basic analytics', 'Email support', 'Attendance tracking'],
-    cta: 'Get Started', ctaClass: 'btn-secondary w-full justify-center',
-  },
-  {
-    name: 'Standard', price: '$149', period: '/month', color: 'border-primary-500',
-    badge: 'Most Popular', badgeColor: 'bg-primary-600 text-white',
-    features: ['Up to 800 students', '20 teacher accounts', 'Advanced analytics', 'Priority support', 'AI Study Assistant', 'Parent portal'],
-    cta: 'Get Started', ctaClass: 'btn-primary w-full justify-center',
-  },
-  {
-    name: 'Premium', price: '$299', period: '/month', color: 'border-purple-400',
-    badge: '', badgeColor: '',
-    features: ['Up to 2,000 students', 'Unlimited teachers', 'Full analytics suite', '24/7 support', 'AI + Portfolio', 'Custom branding', 'API access'],
-    cta: 'Get Started', ctaClass: 'btn-secondary w-full justify-center',
-  },
-  {
-    name: 'Enterprise', price: 'Custom', period: '', color: 'border-orange-400',
-    badge: '', badgeColor: '',
-    features: ['Unlimited students', 'Unlimited everything', 'Dedicated account manager', 'SLA guarantee', 'On-premise option', 'Custom integrations'],
-    cta: 'Contact Us', ctaClass: 'btn-secondary w-full justify-center',
-  },
-]
 
-const testimonials = [
-  {
-    name: 'Jean Pierre Habimana', role: 'Principal, GS Saint Paul Kimironko',
-    text: 'EduVerse Rwanda transformed how we manage our school. The analytics dashboard saves us hours every week.',
-    avatar: 'J', color: 'bg-blue-100 text-blue-700',
-  },
-  {
-    name: 'Marie Claire Uwimana', role: 'Mathematics Teacher, Lycée de Kigali',
-    text: 'Taking attendance and entering marks used to take forever. Now it takes minutes. My students love the portal too!',
-    avatar: 'M', color: 'bg-green-100 text-green-700',
-  },
-  {
-    name: 'Carine Mukamana', role: 'S6 Student, GSAP Kagarama',
-    text: 'The AI study assistant helped me prepare for my national exams. I can see all my results and assignments in one place.',
-    avatar: 'C', color: 'bg-purple-100 text-purple-700',
-  },
-]
 
 export default function LandingPage() {
+  const { t } = useTranslation()
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', schoolName: '', message: '' })
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState('')
+
+  const handleContact = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSending(true); setSendError('')
+    try {
+      await api.post('/contact', form)
+      setSent(true)
+      setForm({ firstName: '', lastName: '', email: '', schoolName: '', message: '' })
+    } catch {
+      setSendError('Failed to send. Please try again.')
+    } finally {
+      setSending(false)
+    }
+  }
+
   const { data: dbStats } = useQuery({
     queryKey: ['public-stats'],
     queryFn: () => api.get('/analytics/public-stats').then(r => r.data.data),
@@ -112,10 +91,10 @@ export default function LandingPage() {
   })
 
   const stats = [
-    { val: dbStats?.totalSchools ?? 0, label: 'Schools Registered', icon: School },
-    { val: dbStats?.totalStudents ?? 0, label: 'Students Enrolled', icon: Users },
-    { val: dbStats?.totalTeachers ?? 0, label: 'Teachers Active', icon: Award },
-    { val: dbStats?.uptime ?? 0, label: 'Uptime Guaranteed', icon: Zap },
+    { val: dbStats?.totalSchools ?? 0, label: t('landing.schoolsRegistered'), icon: School },
+    { val: dbStats?.totalStudents ?? 0, label: t('landing.studentsEnrolled'), icon: Users },
+    { val: dbStats?.totalTeachers ?? 0, label: t('landing.teachersActive'), icon: Award },
+    { val: dbStats?.uptime ?? 0, label: t('landing.uptimeGuaranteed'), icon: Zap },
   ]
 
   return (
@@ -129,17 +108,14 @@ export default function LandingPage() {
             </div>
             <div>
               <span className="font-bold text-primary-600 text-lg">EduVerse</span>
-              <span className="text-xs text-gray-400 ml-1 font-medium">RWANDA</span>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
-            <a href="#features" className="hover:text-primary-600 transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-primary-600 transition-colors">Pricing</a>
-            <a href="#about" className="hover:text-primary-600 transition-colors">About</a>
-            <a href="#contact" className="hover:text-primary-600 transition-colors">Contact</a>
+            <a href="#features" className="hover:text-primary-600 transition-colors">{t('landing.features')}</a>
+            <a href="#contact" className="hover:text-primary-600 transition-colors">{t('landing.contact')}</a>
           </div>
           <Link to="/login" className="btn-primary">
-            Sign In <ArrowRight size={15} />
+            {t('landing.signIn')} <ArrowRight size={15} />
           </Link>
         </div>
       </nav>
@@ -154,28 +130,28 @@ export default function LandingPage() {
               All-in-One Education Platform
             </div>
             <h1 className="text-5xl font-extrabold text-gray-900 leading-tight mb-4">
-              Manage Schools,<br />
-              <span className="text-primary-600">Empower Education,</span><br />
-              Build the Future
+              {t('landing.heroTitle').split('\n').map((line: string, i: number) => (
+                <span key={i}>{i === 1 ? <span className="text-primary-600">{line}</span> : line}{i < 2 && <br />}</span>
+              ))}
             </h1>
             <p className="text-lg text-gray-500 mb-8 max-w-md leading-relaxed">
-              EduVerse Rwanda is a smart school management and learning platform that connects schools, teachers, students and parents in one place.
+              {t('landing.heroSubtitle')}
             </p>
             <div className="flex items-center gap-4 flex-wrap">
               <Link to="/login" className="btn-primary px-6 py-3 text-base">
-                Get Started Free <ArrowRight size={16} />
+                {t('landing.getStartedFree')} <ArrowRight size={16} />
               </Link>
               <a href="#features" className="btn-secondary px-6 py-3 text-base gap-2">
                 <div className="w-7 h-7 bg-primary-600 rounded-full flex items-center justify-center">
                   <Play size={12} className="text-white ml-0.5" />
                 </div>
-                See Features
+                {t('landing.seeFeatures')}
               </a>
             </div>
 
             {/* Feature icons row */}
             <div className="mt-12">
-              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-4">Powerful Features</p>
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-4">{t('landing.powerfulFeatures')}</p>
               <div className="flex flex-wrap gap-4">
                 {features.map(({ icon: Icon, label, color }) => (
                   <div key={label} className="flex flex-col items-center gap-1.5">
@@ -232,10 +208,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-14">
             <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border border-primary-100">
-              <Zap size={13} /> Everything You Need
+              <Zap size={13} /> {t('landing.everythingYouNeed')}
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-3">Powerful Features for Every Role</h2>
-            <p className="text-gray-500 max-w-xl mx-auto text-lg">From multi-school management to AI-powered learning, EduVerse has everything your school needs.</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">{t('landing.featuresTitle')}</h2>
+            <p className="text-gray-500 max-w-xl mx-auto text-lg">{t('landing.featuresSubtitle')}</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featureCards.map((f) => (
@@ -263,8 +239,8 @@ export default function LandingPage() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-3">One Platform, Many Roles</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">Every stakeholder gets a tailored experience designed for their specific needs.</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">{t('landing.onePlatform')}</h2>
+            <p className="text-gray-500 max-w-xl mx-auto">{t('landing.onePlatformSub')}</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {roles.map((role) => (
@@ -277,7 +253,7 @@ export default function LandingPage() {
                   <p className="font-bold text-gray-800 text-sm">{role.title}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{role.sub}</p>
                   <Link to="/login" className="mt-3 inline-flex items-center gap-1 text-xs text-primary-600 font-medium hover:underline">
-                    Access <ArrowRight size={11} />
+                    {t('landing.access')} <ArrowRight size={11} />
                   </Link>
                 </div>
               </div>
@@ -290,8 +266,8 @@ export default function LandingPage() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-14">
-            <h2 className="text-4xl font-bold text-gray-900 mb-3">Get Started in Minutes</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">Setting up your school on EduVerse is fast and easy.</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-3">{t('landing.howItWorks')}</h2>
+            <p className="text-gray-500 max-w-xl mx-auto">{t('landing.howItWorksSub')}</p>
           </div>
           <div className="grid md:grid-cols-4 gap-6">
             {[
@@ -314,136 +290,18 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRICING ── */}
-      <section id="pricing" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4 border border-green-100">
-              <CheckCircle size={13} /> Simple Pricing
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-3">Choose Your Plan</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">Flexible plans for schools of every size. No hidden fees.</p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {plans.map((p) => (
-              <div key={p.name} className={`relative rounded-2xl border-2 ${p.color} p-6 flex flex-col hover:shadow-lg transition-shadow ${p.badge ? 'shadow-lg' : ''}`}>
-                {p.badge && (
-                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 ${p.badgeColor} text-xs font-bold px-3 py-1 rounded-full`}>
-                    {p.badge}
-                  </div>
-                )}
-                <div className="mb-5">
-                  <p className="font-bold text-gray-800 text-lg">{p.name}</p>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-3xl font-extrabold text-gray-900">{p.price}</span>
-                    <span className="text-gray-400 text-sm">{p.period}</span>
-                  </div>
-                </div>
-                <ul className="space-y-2.5 flex-1 mb-6">
-                  {p.features.map(f => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                      <CheckCircle size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/login" className={p.ctaClass}>
-                  {p.cta} <ArrowRight size={14} />
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS ── */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-14">
-            <h2 className="text-4xl font-bold text-gray-900 mb-3">Trusted by Educators Across Rwanda</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">Hear what schools, teachers, and students say about EduVerse.</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((t) => (
-              <div key={t.name} className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-shadow">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />)}
-                </div>
-                <p className="text-gray-600 text-sm leading-relaxed mb-5">"{t.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${t.color}`}>
-                    {t.avatar}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-800 text-sm">{t.name}</p>
-                    <p className="text-xs text-gray-400">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── ABOUT ── */}
-      <section id="about" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-indigo-100">
-              <Globe size={13} /> About EduVerse Rwanda
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Built for Rwanda's Education System</h2>
-            <p className="text-gray-500 leading-relaxed mb-5">
-              EduVerse Rwanda was built specifically for Rwandan schools — supporting the national curriculum, REB standards, and multilingual communication in Kinyarwanda, English, and French.
-            </p>
-            <p className="text-gray-500 leading-relaxed mb-6">
-              Our mission is to digitize education administration and improve learning outcomes for every student in Rwanda, from primary schools in rural areas to top secondary schools in Kigali.
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { icon: Clock, label: 'Founded', val: '2023' },
-                { icon: Globe, label: 'Coverage', val: 'All 5 Provinces' },
-                { icon: Users, label: 'Team', val: '30+ Experts' },
-                { icon: Award, label: 'Certified', val: 'REB Approved' },
-              ].map(s => (
-                <div key={s.label} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                  <div className="w-9 h-9 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <s.icon size={16} className="text-primary-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">{s.label}</p>
-                    <p className="text-sm font-bold text-gray-800">{s.val}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="relative rounded-3xl overflow-hidden shadow-xl">
-            <img
-              src="https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=700&h=500&fit=crop"
-              alt="Education in Rwanda"
-              className="w-full h-96 object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-primary-900/50 to-transparent"></div>
-            <div className="absolute bottom-6 left-6 text-white">
-              <p className="font-bold text-xl">Empowering Rwandan Education</p>
-              <p className="text-blue-200 text-sm">One school at a time</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ── CONTACT ── */}
       <section id="contact" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12">
           <div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Get in Touch</h2>
-            <p className="text-gray-500 mb-8">Have questions or want to get a demo? We'd love to hear from you.</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">{t('landing.getInTouch')}</h2>
+            <p className="text-gray-500 mb-8">{t('landing.getInTouchSub')}</p>
             <div className="space-y-4">
               {[
-                { icon: Mail, label: 'Email', val: 'hello@eduverse.rw' },
-                { icon: Phone, label: 'Phone', val: '+250 788 123 456' },
-                { icon: MapPin, label: 'Address', val: 'KG 7 Ave, Kigali, Rwanda' },
+                { icon: Mail, label: 'Email', val: 'hello@eduverse.com' },
+                { icon: Phone, label: 'Phone', val: '+1 800 123 456' },
+                { icon: MapPin, label: 'Address', val: '123 Education Ave, Suite 100' },
               ].map(c => (
                 <div key={c.label} className="flex items-center gap-4">
                   <div className="w-11 h-11 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -457,33 +315,37 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-800 text-lg mb-5">Send us a message</h3>
+          <form onSubmit={handleContact} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h3 className="font-bold text-gray-800 text-lg mb-5">{t('landing.sendMessage')}</h3>
+            {sent && <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-lg text-sm">✅ Message sent! We'll get back to you soon.</div>}
+            {sendError && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{sendError}</div>}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="label">First Name</label><input className="input" placeholder="Jean" /></div>
-                <div><label className="label">Last Name</label><input className="input" placeholder="Habimana" /></div>
+                <div><label className="label">{t('landing.firstName')}</label><input className="input" placeholder="Jean" value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))} required /></div>
+                <div><label className="label">{t('landing.lastName')}</label><input className="input" placeholder="Habimana" value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))} /></div>
               </div>
-              <div><label className="label">Email</label><input type="email" className="input" placeholder="you@school.rw" /></div>
-              <div><label className="label">School Name</label><input className="input" placeholder="Your school name" /></div>
-              <div><label className="label">Message</label><textarea className="input h-28 resize-none" placeholder="Tell us about your school and needs..."></textarea></div>
-              <button className="btn-primary w-full justify-center py-2.5">Send Message <ArrowRight size={15} /></button>
+              <div><label className="label">{t('common.email')}</label><input type="email" className="input" placeholder="you@school.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required /></div>
+              <div><label className="label">{t('landing.schoolName')}</label><input className="input" placeholder="Your school name" value={form.schoolName} onChange={e => setForm(f => ({ ...f, schoolName: e.target.value }))} /></div>
+              <div><label className="label">{t('landing.message')}</label><textarea className="input h-28 resize-none" placeholder={t('landing.messagePlaceholder')} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} required></textarea></div>
+              <button type="submit" disabled={sending} className="btn-primary w-full justify-center py-2.5 disabled:opacity-60">
+                {sending ? 'Sending...' : <>{t('landing.sendBtn')} <ArrowRight size={15} /></>}
+              </button>
             </div>
-          </div>
+          </form>
         </div>
       </section>
 
       {/* ── CTA ── */}
       <section className="py-20 blue-gradient">
         <div className="max-w-4xl mx-auto px-6 text-center text-white">
-          <h2 className="text-4xl font-bold mb-4">Ready to Transform Your School?</h2>
-          <p className="text-blue-100 mb-8 text-lg">Join 124+ schools already using EduVerse Rwanda. Get started free today.</p>
+          <h2 className="text-4xl font-bold mb-4">{t('landing.readyToTransform')}</h2>
+          <p className="text-blue-100 mb-8 text-lg">{t('landing.readySubtitle')}</p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link to="/login" className="inline-flex items-center gap-2 bg-white text-primary-600 font-bold px-8 py-3.5 rounded-xl hover:bg-blue-50 transition-colors shadow-lg">
-              Get Started Free <ChevronRight size={18} />
+              {t('landing.getStartedFree')} <ChevronRight size={18} />
             </Link>
             <a href="#contact" className="inline-flex items-center gap-2 bg-white/10 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-white/20 transition-colors border border-white/20">
-              Request a Demo
+              {t('landing.requestDemo')}
             </a>
           </div>
         </div>
@@ -498,7 +360,7 @@ export default function LandingPage() {
                 <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                   <BookOpen size={15} className="text-white" />
                 </div>
-                <span className="text-white font-bold">EduVerse Rwanda</span>
+                <span className="text-white font-bold">EduVerse</span>
               </div>
               <p className="text-sm leading-relaxed">Smart school management platform connecting schools, teachers, students and parents.</p>
             </div>
@@ -522,8 +384,8 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-3">
-            <p className="text-sm">© 2025 EduVerse Rwanda. All rights reserved.</p>
-            <p className="text-sm">Made with ❤️ in Kigali, Rwanda 🇷🇼</p>
+            <p className="text-sm">{t('landing.allRightsReserved')}</p>
+            <p className="text-sm">{t('landing.madeWith')}</p>
           </div>
         </div>
       </footer>

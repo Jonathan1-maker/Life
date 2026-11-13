@@ -29,6 +29,19 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ error: 'User not found or inactive' });
     }
 
+    // Fallback: if school_id missing from DB row, use the one from JWT
+    if (!rows[0].school_id && decoded.school_id) {
+      rows[0].school_id = decoded.school_id;
+    }
+
+    // Block non-super_admin users if their school is suspended
+    if (rows[0].school_id && rows[0].role !== 'super_admin') {
+      const schoolRes = await pool.query('SELECT status FROM schools WHERE id=$1', [rows[0].school_id]);
+      if (schoolRes.rows[0]?.status === 'suspended') {
+        return res.status(403).json({ error: 'School access has been suspended. Please contact support.' });
+      }
+    }
+
     req.user = rows[0];
     next();
   } catch (err) {
