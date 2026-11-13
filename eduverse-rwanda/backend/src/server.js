@@ -52,7 +52,11 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('dev'));
 app.use(cors({
-  origin: [process.env.CLIENT_URL || 'http://localhost:3000', 'http://localhost:5173'],
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    'http://localhost:5173',
+    /\.vercel\.app$/,
+  ],
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -105,33 +109,33 @@ app.use('/api/contact', contactRoutes);
 
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+// Export for Vercel serverless
+module.exports = app;
 
-const start = async () => {
-  await connectRedis();
-
-  // Test DB connection but don't crash if it times out on first try
-  let dbConnected = false;
-  for (let i = 1; i <= 3; i++) {
-    try {
-      await pool.query('SELECT 1');
-      console.log('✅ PostgreSQL connected');
-      dbConnected = true;
-      break;
-    } catch (err) {
-      console.log(`⚠️  DB connection attempt ${i}/3 failed: ${err.message}`);
-      if (i < 3) await new Promise(r => setTimeout(r, 5000));
+// Only listen when running locally
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  const start = async () => {
+    await connectRedis();
+    let dbConnected = false;
+    for (let i = 1; i <= 3; i++) {
+      try {
+        await pool.query('SELECT 1');
+        console.log('✅ PostgreSQL connected');
+        dbConnected = true;
+        break;
+      } catch (err) {
+        console.log(`⚠️  DB connection attempt ${i}/3 failed: ${err.message}`);
+        if (i < 3) await new Promise(r => setTimeout(r, 5000));
+      }
     }
-  }
-
-  if (!dbConnected) {
-    console.error('❌ Could not connect to database after 3 attempts. Check your DATABASE_URL in .env');
-    process.exit(1);
-  }
-
-  app.listen(PORT, () => {
-    console.log(`🚀 EduVerse Rwanda backend running on port ${PORT}`);
-  });
-};
-
-start().catch(console.error);
+    if (!dbConnected) {
+      console.error('❌ Could not connect to database after 3 attempts.');
+      process.exit(1);
+    }
+    app.listen(PORT, () => {
+      console.log(`🚀 EduVerse Rwanda backend running on port ${PORT}`);
+    });
+  };
+  start().catch(console.error);
+}
